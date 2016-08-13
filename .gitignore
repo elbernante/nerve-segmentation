@@ -1,0 +1,24 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# IPython Notebook
+.ipynb_checkpoints/
+
+# Project-specific
+data/*
+!data/.gitinclude
+output/
+runs/
+
+# Mac
+.DS_Store
+
+# Temps
+Untitled.ipynb
+algorithm.psd
+temp.py
