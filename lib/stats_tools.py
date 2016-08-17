@@ -22,6 +22,8 @@ def get_f_stats(predictions, labels,
             false_negatives + fn, true_negatives + tn)
 
 def f_beta_score(y_pred, y_true, beta=1.0, smooth=1e-8):
+    """Returns F measure using tensorflow"""
+
     preds = tf.argmax(y_pred, 3)
     tp = tf.cast(tf.reduce_sum(preds * y_true), dtype=tf.float32)
     fp = tf.reduce_sum(tf.cast(tf.greater(preds, y_true), dtype=tf.float32))
@@ -33,6 +35,8 @@ def f_beta_score(y_pred, y_true, beta=1.0, smooth=1e-8):
 
 def np_f_beta_score(true_positives=0, false_positives=0, 
                     false_negatives=0, beta=1.0, smooth=1e-8):
+    """Returns F measure using numpy"""
+    
     b2 = beta * beta
     top = (1. + b2) * true_positives
     bottom = top + (b2 * false_negatives) + false_positives

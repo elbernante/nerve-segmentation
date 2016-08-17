@@ -7,15 +7,17 @@ import os, glob, time, timeit
 import numpy as np
 import tensorflow as tf
 
+from math import ceil
+
+from six import PY3, print_
+from six.moves import range, zip, cPickle
+
 from lib.variable_registry import memoise_variables, DEFAULT_REGISTRY_MANAGER
 from lib.file_io import loss_log_saver, save_f_stat_log, training_log_updater
 from lib.file_io import latest_checkpoint_index_getter, checkpoint_getter
 from lib.file_io import highest_checkpoint_saver
 from lib.stats_tools import get_f_stats, f_beta_score, np_f_beta_score
 from lib.stats_tools import print_data_stats
-
-from six import PY3, print_
-from six.moves import range, zip, cPickle
 
 from config import *
 
@@ -357,11 +359,6 @@ def do_training(session, X_train, y_train,
             # ==========================================
             
             if (step % SHOW_LOG_AT_EVERY_ITERATION == 0):
-                # print("... epoch {}/{}, step {}/{} ==> mini batch loss: {}" \
-                #       .format(epoch, start_at_epoch + epochs - 1, 
-                #               step, num_steps - 1, _loss))
-                # print("...        F1 Score: {}".format(_train_f1))
-
                 print("\n... Epoch {}/{}, iteration {}/{}:" \
                       .format(epoch, start_at_epoch + epochs - 1,
                               step, num_steps - 1))
@@ -545,4 +542,146 @@ def run_inference(model, image_dir=TEST_DIR, checkpoint_index='latest'):
     with tf.Session(graph=loc['graph']) as sess:
         do_inference(sess, test_keys, checkpoint, image_dir=image_dir, **loc)
         # do_inference(sess, test_keys[:8], checkpoint, image_dir=image_dir, **loc)
+
+################################################################################
+
+def get_index_of_highest_checkpoint():
+    cp_files_highest = glob.glob(os.path.join(HIGHEST_DIR,
+                                      CHECK_POINT_FILE.format('*')))
+    if len(cp_files_highest) == 0:
+        return 'latest'
+
+    index = int(cp_files_highest[0].split('-')[-1].split('.')[0])
+
+    # Check if checkpoint files exists in the CHECK_POINT_DIR directory
+    check_points = [os.path.basename(f) for f in cp_files_highest]
+    cp_files_cpdir = [os.path.join(CHECK_POINT_DIR, f) for f in check_points]
+    exists = all([os.path.isfile(f) for f in cp_files_cpdir])
+
+    # If it doesn't already exists, copy from HIGHEST_DIR
+    if not exists:
+        for f in cp_files_highest:
+            copy(f, CHECK_POINT_DIR)
+
+    return index
+
+def _compile_model_for_classifier(model, batch_size):
+    print("\nGenerating graph...")
+    graph = tf.Graph()
+    with graph.as_default():
+        tf_classif_xs = tf.placeholder(tf.float32,
+                                       shape=(batch_size,
+                                              IMAGE_HEIGHT, IMAGE_WIDTH,
+                                              CHANNELS))
+
+        @memoise_variables("convolutions_classifier")
+        def make_model(*args, **kwargs):
+            return model(*args, **kwargs)
+
+        # Classifier Logits
+        classif_logits = make_model(tf_classif_xs, apply_dropout=False)
+        print("Classifier logits:", classif_logits)
+        classif_prediction = prediction(classif_logits)
+
+        param_saver = tf.train.Saver(max_to_keep=CHECK_POINTS_TO_KEEP)
+
+    return locals()
+
+def _make_classifier(model, checkpoint_index='latest', batch_size=1):
+    # Get checkpoint file
+    if not(checkpoint_index == 'latest' or \
+            (isinstance(checkpoint_index, int) and checkpoint_index >= 0)):
+        raise ValueError("Checkpoint index can either be 'latest' or >= 0.")
+
+    cp_index = checkpoint_index if isinstance(checkpoint_index, int) \
+                                 else get_latest_checkpoint_index()
+    checkpoint = get_checkpoint_at_index(cp_index)
+
+    # Compile graph
+    loc = _compile_model_for_classifier(model, batch_size)
+    session = tf.Session(graph=loc['graph'])
+
+    # Load variables from checkpoint
+    loc['param_saver'].restore(session, checkpoint)
+    print("Restored variables from '{}'.".format(checkpoint))
+
+    # Normalizer for images
+    with open(TRAIN_STATS_PICKLE, 'rb') as f:
+        stats = cPickle.load(f)
+    mean = stats['mean']
+    std = stats['std']
+    normalize = lambda imgs: (imgs - mean) / std
+
+    # Core classifier function
+    def classifier_func(X):
+        count = X.shape[0]
+        X = normalize(X)
+        if X.shape[0] < batch_size:
+            shape = list(X.shape)
+            shape[0] = batch_size - shape[0]
+            pad = np.zeros(shape, dtype=X.dtype)
+            X = np.concatenate((X, pad), axis=0)
+
+        feed_dict = {loc['tf_classif_xs']: X}
+        preds = session.run(loc['classif_prediction'],
+                                   feed_dict=feed_dict)[:count]
+        return np.argmax(preds, axis=3)
+
+    return session, classifier_func
+
+class DeepClassifier:
+    def __init__(self, model):
+        self.model = model
+        self.checkpoint_index = None
+        self._session = None
+        self._classifier = None
+
+    def fit(self, X, y, X_val=None, y_val=None):
+        data = (X, y, X_val, y_val)
+        run_training(model=self.model, data=data)
+        self.load_from_checkpoint(index='highest')
+
+    def predict(self, X, batch_size=1, regen=False):
+        self._init_for_inference(batch_size=batch_size, regen=regen)
+
+        batch_count = int(ceil(float(X.shape[0]) / batch_size))
+        x_iter = lambda: (X[i * batch_size : i * batch_size + batch_size] \
+                          for i in range(batch_count))
+
+        preds = [self._classifier(x) for x in x_iter()]
+        return preds[0] if len(preds) == 1 else np.concatenate(preds, axis=0)
+
+    def load_from_checkpoint(self, index='highest',
+                                   init_for_inference=False,
+                                   batch_size=1):
+        self.checkpoint_index = get_index_of_highest_checkpoint() \
+                                    if index == 'highest' \
+                                    else index
+        if init_for_inference:
+            self._init_for_inference(batch_size=batch_size, regen=True)
+
+    def _init_for_inference(self, batch_size=1, regen=False):
+        if self.checkpoint_index is None:
+            raise RuntimeError("Model is not yet built.")
+
+        if regen: self._delete_session()
+        if self._session is None:
+            session, classifier = _make_classifier(self.model,
+                                                self.checkpoint_index,
+                                                batch_size)
+            self._set_session(session)
+            self._classifier = classifier
+
+    def _set_session(self, session):
+        self._delete_session()
+        self._session = session
+
+    def _delete_session(self):
+        if self._session is not None:
+            self._session.close()
+            self._session = None
+            self._classifier = None
+
+    def __del__(self):
+        self._delete_session()
 

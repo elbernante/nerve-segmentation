@@ -9,7 +9,7 @@ from six.moves import range, zip
 
 from config import IMAGE_HEIGHT, IMAGE_WIDTH, NUM_LABELS
 from config import TRAIN_DIR
-from engine import get_train_val_sets, run_training
+from engine import get_train_val_sets, DeepClassifier
 
 def make_model(data, apply_dropout=False, dropout_keep_rate=0.8):
     def conv_image(root_img):
@@ -75,6 +75,6 @@ def run_test(checkpoint_index='latest'):
                   checkpoint_index=checkpoint_index)
 
 if __name__ == "__main__":
-    data = get_train_val_sets(image_dir=TRAIN_DIR)
-    run_training(model=make_model, data=data)
-
+    train_x, train_y, val_x, val_y = get_train_val_sets(image_dir=TRAIN_DIR)
+    cls = DeepClassifier(make_model)
+    cls.fit(train_x, train_y, val_x, val_y)
