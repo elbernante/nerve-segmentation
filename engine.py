@@ -3,6 +3,7 @@ from __future__ import absolute_import
 from __future__ import print_function
 
 import os, glob, time, timeit
+from shutil import copy
 
 import numpy as np
 import tensorflow as tf
@@ -37,7 +38,7 @@ uncomber = lambda o: tf.reshape(o, [-1, IMAGE_HEIGHT, IMAGE_WIDTH, NUM_LABELS])
 
 def get_class_weights():
     if not(os.path.isfile(TRAIN_STATS_PICKLE)):
-        raise RuntimeError("No data found. Run 'preprocess.py' first.")
+        raise RuntimeError("Data not found. Run 'preprocess.py' first.")
 
     with open(TRAIN_STATS_PICKLE, 'rb') as f:
         stats = cPickle.load(f)
@@ -48,13 +49,21 @@ def get_class_weights():
     scaled_neg = neg / max(pos, neg)
     return scaled_pos, scaled_neg
 
-pos_class_weight, neg_class_weight = get_class_weights()
-class_weights = lambda: tf.constant([neg_class_weight, pos_class_weight])
+_class_weights = {'positive': None, 'negative': None}
+def class_weights():
+    if _class_weights['positive'] is None or \
+            _class_weights['negative'] is None:
+       pos_class_weight, neg_class_weight = get_class_weights()
+       _class_weights['positive'] = pos_class_weight
+       _class_weights['negative'] = neg_class_weight
+
+    return tf.constant([ _class_weights['negative'],
+                         _class_weights['positive']])
 
 def get_train_val_sets(image_dir=TRAIN_DIR):
     if not(os.path.isfile(TRAIN_SET_PICKLE) \
             and os.path.isfile(VALIDATION_SET_PICKLE)):
-        raise RuntimeError("No train data found. Run 'preprocess.py' first.")
+        raise RuntimeError("Data not found. Run 'preprocess.py' first.")
 
     print("\nReading data...")
     print("... loading {}".format(TRAIN_SET_PICKLE))
@@ -606,11 +615,14 @@ def _make_classifier(model, checkpoint_index='latest', batch_size=1):
     print("Restored variables from '{}'.".format(checkpoint))
 
     # Normalizer for images
-    with open(TRAIN_STATS_PICKLE, 'rb') as f:
-        stats = cPickle.load(f)
-    mean = stats['mean']
-    std = stats['std']
-    normalize = lambda imgs: (imgs - mean) / std
+    if os.path.exists(TRAIN_STATS_PICKLE):
+        with open(TRAIN_STATS_PICKLE, 'rb') as f:
+            stats = cPickle.load(f)
+        mean = stats['mean']
+        std = stats['std']
+        normalize = lambda imgs: (imgs - mean) / std
+    else:
+        normalize = lambda imgs: (imgs - imgs.mean()) / imgs.std()
 
     # Core classifier function
     def classifier_func(X):

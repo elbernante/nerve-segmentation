@@ -31,11 +31,20 @@ def get_args():
                              ' Defaults to <SRC_DIR>_output.')
     parser.add_argument('-m', '--mask-only',
                         action='store_true',
-                        help='Output masks only. No overlay on image.')
+                        help='Generate output masks only. No overlay on image.')
+    parser.add_argument('-p', '--prediction', type=str,
+                        choices=['fill', 'outline'], default='fill',
+                        help='Fill or outline the prediction output.' + 
+                             ' Default is "fill".')
+    parser.add_argument('-l', '--label', type=str,
+                        choices=['fill', 'outline'], default='fill',
+                        help='Fill or outline the mask label.' + 
+                             ' Default is "fill".')
 
     args = vars(parser.parse_args())
+
     if args['dest_dir'] is None:
-        args['dest_dir'] = args['src_dir'] + '_output'
+        args['dest_dir'] = os.path.normpath(args['src_dir']) + '_output'
     return args
 
 def get_target_keys(src_dir):
@@ -108,25 +117,34 @@ def zero_pad(img, height, width):
     padded[h:h+img.shape[0], w:w+img.shape[1]] = img
     return padded
 
-def overlay_prediction(img, pred, mask=None, outline_size=1):
+def overlay_prediction(img, pred, mask=None,
+                       fill_pred=True, fill_mask=True,
+                       outline_size=1):
+
+    kernel = np.ones((outline_size, outline_size), np.uint8)
     img = cv2.cvtColor(img, cv2.COLOR_GRAY2BGR)
     
     # Highlight mask
     if mask is not None:
-        img[:,:,2] *= np.logical_not(mask)
-        edges = cv2.Canny(mask * 255, 100, 200) > 0
+        edges = cv2.Canny(mask * 255, 100, 200)
+        if fill_mask:
+            img[:,:,2] *= np.logical_not(mask)
+            edges = edges > 0
+        else:
+            edges = edges > 0 if outline_size == 1 else \
+                    cv2.dilate(edges, kernel, iterations=1) > 0
         img[edges, 0]= 255
         img[edges, 1]= 255
         img[edges, 2]= 0
 
-
-    # Outline prediction
+    # Highlight prediction
     edges = cv2.Canny(pred, 100, 200)
-    if outline_size == 1:
+    if fill_pred:
+        img[:,:,0] *= np.logical_not(pred // 255)
         edges = edges > 0
     else:
-        kernel = np.ones((outline_size, outline_size), np.uint8)
-        edges = cv2.dilate(edges, kernel, iterations = 1) > 0
+        edges = (edges > 0) if outline_size == 1 else \
+                cv2.dilate(edges, kernel, iterations=1) > 0
     img[edges, 0]= 0
     img[edges, 1]= 255
     img[edges, 2]= 255
@@ -141,10 +159,10 @@ def run_inference():
              .format(IMAGE_FILE_EXT))
         exit(0)
 
-    create_if_not_exists(args['dest_dir'])
-
     cls = DeepClassifier(make_model)
     cls.load_from_checkpoint('highest', init_for_inference=True)
+
+    create_if_not_exists(args['dest_dir'])
 
     for k in tqdm(keys, desc='Processing', unit='img'):
         raw_img = get_image(args['src_dir'], k)
@@ -159,13 +177,17 @@ def run_inference():
         if args['mask_only']:
             output = padded
         else:
-            mask  = get_image_label(args['src_dir'], k)
-            output = overlay_prediction(raw_img, padded, mask, outline_size=2)
+            label  = get_image_label(args['src_dir'], k)
+            fill_pred = args['prediction'] == 'fill'
+            fill_mask = args['label'] == 'fill'
+            output = overlay_prediction(raw_img, padded, label, 
+                                        fill_pred=fill_pred, 
+                                        fill_mask=fill_mask,
+                                        outline_size=2)
 
-        cv2.imwrite(os.path.join(args['dest_dir'], '{}.png'.format(k)),
-                        output)
+        cv2.imwrite(os.path.join(args['dest_dir'], '{}.png'.format(k)), output)
     
-    print("Done. {} images saved to '{}'".format(len(keys), args['dest_dir']))
+    print("Done. {} images saved in '{}'".format(len(keys), args['dest_dir']))
 
 if __name__ == '__main__':
     run_inference()

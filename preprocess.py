@@ -322,6 +322,16 @@ def split_data_train_val(image_dir=TRAIN_DIR):
     print("    Positive class frequency: {}".format(pos_freq))
     print("    Negative class frequency: {}".format(neg_freq))
 
+# def copy_imgs(keys):
+#     from shutil import copy
+#     imgs = [os.path.join('data/train', '{}.tif'.format(k)) for k in keys]
+#     masks = [os.path.join('data/train', '{}_mask.tif'.format(k)) for k in keys]
+
+#     for i in imgs:
+#         copy(i, 'data/validation_infer')
+
+#     for i in masks:
+#         copy(i, 'data/validation_infer')
 
 # Filter and resize images
 filter_and_resize(src_dir=TRAIN_SRC, dst_dir=TRAIN_DIR) 
