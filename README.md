@@ -34,11 +34,12 @@ python preprocess.py
 ```
 
 After running the script, the following files will be generated:
-
-|data/train_xs96/       |Folder containing the filtered and resized images|
-|data/train_set.npz     |Train set in numpy readable format               |
-|data/validation_set.npz|Validation set in numpy readable format          |
-|data/train_stats.pkl   |Pickle file that contains basic statistics about the train set|
+```
+data/train_xs96/        - containing the filtered and resized images
+data/train_set.npz      - Train set in numpy readable format
+data/validation_set.npz - Validation set in numpy readable format
+data/train_stats.pkl    - Pickle file that contains basic statistics about the train set
+```
 
 
 
