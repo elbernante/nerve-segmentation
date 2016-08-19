@@ -23,7 +23,7 @@ The dataset can be downloaded from Kaggle competetion "Ultrasound Nerve Segmatio
 
 https://www.kaggle.com/c/ultrasound-nerve-segmentation/data
 
-Downlad the ***train*** set and unzip the contents. Put the images (.tif files) in ```<root_project_dir>/data/train/```
+Download the ***train*** set and unzip the contents. Put the images (.tif files) in ```<root_project_dir>/data/train/```.
 
 
 ### Preprocessing
@@ -34,8 +34,8 @@ python preprocess.py
 ```
 
 After running the script, the following files will be generated:
-|File                   |Description                                      |
-|-----------------------|-------------------------------------------------|
+
+|***File***             |***Description***                                |
 |data/train_xs96/       |Folder containing the filtered and resized images|
 |data/train_set.npz     |Train set in numpy readable format               |
 |data/validation_set.npz|Validation set in numpy readable format          |
