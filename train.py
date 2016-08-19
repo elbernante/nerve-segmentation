@@ -1,3 +1,20 @@
+"""
+Model definition and training execution
+
+This script executes training for a number of epochs (set in config.py).
+Training ends when the number of epoch is exhausted or by pressing Ctrl + C.
+
+The best model is saved in output/highest_score/ directory.
+
+NOTE: Before executing this script, be sure to run 'preprocess.py' first
+      to generate data.
+
+      Parameters can be configured at 'config.py'
+
+@author:
+    Peter James Bernante
+"""
+
 from __future__ import division
 from __future__ import absolute_import
 from __future__ import print_function
@@ -12,6 +29,8 @@ from config import TRAIN_DIR
 from engine import get_train_val_sets, DeepClassifier
 
 def make_model(data, apply_dropout=False, dropout_keep_rate=0.8):
+    """Returns model definition for generating tensor graph"""
+
     def conv_image(root_img):
         return root_img.conv(7, 32, stride=1, pad='SAME') \
                        .conv(7, 32, stride=1, pad='SAME') \
@@ -23,7 +42,7 @@ def make_model(data, apply_dropout=False, dropout_keep_rate=0.8):
     
     DE_ = 32    # depth for the last layer before concatination
     
-    # full_layer
+    # full size layer
     full_layer  = conv_image(root).conv(1, DE_) \
                   .dropout(dropout_keep_rate, apply_dropout)
     
@@ -67,12 +86,6 @@ def make_model(data, apply_dropout=False, dropout_keep_rate=0.8):
                      .dropout(dropout_keep_rate, apply_dropout) \
                      .conv(1, 32).conv(3, 32).conv(3, 16) \
                      .conv(1, NUM_LABELS, activation=None).tensor
-
-def run_test(checkpoint_index='latest'):
-    from engine import run_inference
-    from config import TEST_DIR
-    run_inference(model=make_model, image_dir=TEST_DIR, 
-                  checkpoint_index=checkpoint_index)
 
 if __name__ == "__main__":
     train_x, train_y, val_x, val_y = get_train_val_sets(image_dir=TRAIN_DIR)
