@@ -14,6 +14,7 @@ data/*
 !data/.gitinclude
 output/
 runs/
+Capstone.docx
 
 # Mac
 .DS_Store
