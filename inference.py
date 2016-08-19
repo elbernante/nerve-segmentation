@@ -151,8 +151,7 @@ def overlay_prediction(img, pred, mask=None,
 
     return img
 
-def run_inference():
-    args = get_args()
+def run_inference(args):
     keys = get_target_keys(args['src_dir'])
     if len(keys) == 0:
         print("No images found. Expected filename extenion: {}" \
@@ -190,4 +189,4 @@ def run_inference():
     print("Done. {} images saved in '{}'".format(len(keys), args['dest_dir']))
 
 if __name__ == '__main__':
-    run_inference()
+    run_inference(get_args())
