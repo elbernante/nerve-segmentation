@@ -38,7 +38,7 @@ DATA_DIR = mkdir("data")
 OUTPUT_DIR = mkdir('output')
 
 TRAIN_SRC = os.path.join(DATA_DIR, "train")
-TRAIN_DIR = os.path.join(DATA_DIR, "train_xs96f")
+TRAIN_DIR = os.path.join(DATA_DIR, "train_xs96")
 TEST_DIR = os.path.join(DATA_DIR, "test_xs96")
 FILE_EXT = "tif"
 
