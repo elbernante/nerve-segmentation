@@ -35,7 +35,7 @@ python preprocess.py
 
 After running the script, the following files will be generated:
 ```
-data/train_xs96/        - containing the filtered and resized images
+data/train_xs96/        - Directory containing the filtered and resized images
 data/train_set.npz      - Train set in numpy readable format
 data/validation_set.npz - Validation set in numpy readable format
 data/train_stats.pkl    - Pickle file that contains basic statistics about the train set
@@ -51,11 +51,11 @@ To train the model, execute the command:
 python train.py
 ```
 
-Training takes approximately ≈17 minutes per epoch on Amazon AWS g2.2xlarge instance with GPU support. A pre-trained model, that was ran for 10 hours with 35 epochs, can be downloaded at:
+Training takes approximately 17 minutes per epoch on Amazon AWS g2.2xlarge instance with GPU support. A pre-trained model, that was ran for 10 hours with 35 epochs, can be downloaded at:
 
 https://www.dropbox.com/s/xoib4r58hnbwkan/model-35.zip?dl=0
 
-Extract the files and place the ****'model.ckpt-35'**** and ****'model.ckpt-35.meta'*** files in ```output/checpoints/``` directory.
+Extract the files and place the ***'model.ckpt-35'*** and ***'model.ckpt-35.meta'*** files in ```output/checpoints/``` directory.
 
 
 
@@ -68,15 +68,15 @@ Execute the command:
 ```bash
 python inference.py -s <image_dir>
 ```
-The generated output will be saved in ````<image_dir>_output``
+The generated output will be saved in ```<image_dir>_output```
 
 For more details on accepted arguments, see ```inference.py``` file.
 
 
-A sample set of images can be found at ```sample_data``` directory. To see a smaple output, execute the command:
+A sample set of images can be found at ```sample_data/``` directory. To see a smaple output, execute the command:
 
 ```bash
-python inference.py -s sample_data
+python inference.py -s sample_data/
 ```
 
-The generated output can be found at ```sample_data_output```.
+The generated output can be found at ```sample_data_output/```.
