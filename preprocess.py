@@ -9,7 +9,7 @@ Extract the zip file and put the images (.tif files) in 'data/train/' directory.
 Preprocessing involves the following step:
     1. Filtering similar images
     2. Resizing images
-    3. Splitting the dataset to trand and validation set
+    3. Splitting the dataset to train and validation set
 
 The processed images are saved in numpy readable format:
     1. data/train_set.npz
