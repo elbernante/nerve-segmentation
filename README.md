@@ -1,7 +1,7 @@
 Ultrasound Nerve Segmentation
 =============================
 
-Capstone Project for Udacity MLND
+Semantic image segmentation of ultrasound images to identify Brachial Plexus
 
 
 ### Environment Requirements
