@@ -1,7 +1,7 @@
 Ultrasound Nerve Segmentation
 =============================
 
-Semantic image segmentation of ultrasound images to identify Brachial Plexus
+Semantic image segmentation of a collection of nerves called Brachial Plexus in ultrasound images
 
 
 ### Environment Requirements
