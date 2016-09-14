@@ -1,7 +1,7 @@
 Ultrasound Nerve Segmentation
 =============================
 
-Capstone Project for Udacity MLND
+Semantic image segmentation of a collection of nerves called Brachial Plexus in ultrasound images
 
 
 ### Environment Requirements
@@ -55,7 +55,7 @@ Training takes approximately 17 minutes per epoch on Amazon AWS g2.2xlarge insta
 
 https://www.dropbox.com/s/xoib4r58hnbwkan/model-35.zip?dl=0
 
-Extract the files and place the ***'model.ckpt-35'*** and ***'model.ckpt-35.meta'*** files in ```output/checpoints/``` directory.
+Extract the files and place the ***'model.ckpt-35'*** and ***'model.ckpt-35.meta'*** files in ```output/checkpoints/``` directory.
 
 
 
