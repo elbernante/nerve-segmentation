@@ -10,7 +10,10 @@ from six.moves import range, zip
 
 def _vr_flatten(x):
     if isinstance(x, Iterable) and not isinstance(x, tf_Variable):
+        # PY3:
         # yield from (a for i in x for a in _vr_flatten(i))
+        
+        # PY2:
         for y in (a for i in x for a in _vr_flatten(i)):
             yield y
     else:
@@ -40,12 +43,18 @@ class VariableRegistry():
         self.current_index = -1
         
     def get_param_items(self):
+        # PY3:
         # yield from _vr_flatten(self.params)
+
+        # PY2:
         for i in _vr_flatten(self.params):
             yield i
         
     def get_weight_items(self):
+        # PY3:
         # yield from _vr_flatten(self.weight_vars)
+
+        # PY2:
         for i in _vr_flatten(self.weight_vars):
             yield i
 
@@ -79,15 +88,21 @@ class RegistryManager():
         self.reg_stack = []
         
     def get_param_items(self):
+        # PY3:
         # yield from (i for r in self.reg_index.values() 
         #               for i in r.get_param_items())
+
+        # PY2:
         for x in (i for r in self.reg_index.values()
                     for i in r.get_param_items()):
             yield x
         
     def get_weight_items(self):
+        # PY3:
         # yield from (i for r in self.reg_index.values() 
         #               for i in r.get_weight_items())
+
+        # PY2:
         for x in (i for r in self.reg_index.values() 
                     for i in r.get_weight_items()):
             yield x
